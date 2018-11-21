@@ -7,7 +7,7 @@ import pandas as pd
 import os
 import glob
 from netCDF4 import Dataset
-from rca_calculate_hdf5_func import rca_calculate_hdf5_func
+from rca_calculate_UN_func import rca_calculate_UN_func
 
 if __name__ == '__main__':
     if len(sys.argv) < 5:
@@ -37,10 +37,10 @@ if __name__ == '__main__':
     # Specify the path to access and write to the running CSV file (csvdir)
     # csvdir should be input upon running script (sys.argv[4])
     #csv_output_path = '/home/hunzinger/data/'
-    csv_filepath = csvdir+'rca_daily_values.csv'
+    csv_filepath = csvdir+'rca_daily_values_UN.csv'
 
     # Read in baseline variables
-    dataset = Dataset(baselinedir+'rca_baseline_20181109.nc')
+    dataset = Dataset(baselinedir+'rca_baseline_20181108.nc')
     PCT_on_50 = dataset.variables['Flagged clutter grid gates'][:,:]
     vPCT_on_50 = dataset.variables['Flagged clutter grid gates (V)'][:,:]
     dbz95_baseline = dataset.variables['Baseline 95th reflectivity'][:]
@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
     for f in glob.glob(os.path.join(datadir, 'corcsaprM1*.'+date+'.*cor-ppi*.h5')):
         print(f)
-        DateTime, DBZ95, VDBZ95, UHDBZ95, UVDBZ95 = rca_calculate_hdf5_func(f, PCT_on_50, vPCT_on_50, uhPCT_on_50, uvPCT_on_50)
+        DateTime, DBZ95, VDBZ95, UHDBZ95, UVDBZ95 = rca_calculate_UN_func(f, PCT_on_50, vPCT_on_50, uhPCT_on_50, uvPCT_on_50)
         
         # Put all PPI times into a list
         dt.append(DateTime)

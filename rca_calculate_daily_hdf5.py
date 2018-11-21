@@ -10,8 +10,8 @@ from netCDF4 import Dataset
 from rca_calculate_hdf5_func import rca_calculate_hdf5_func
 
 if __name__ == '__main__':
-    if len(sys.argv) < 5:
-        print('ERROR: Arguments are PPI path, date (YYYYMMDD), baseline netCDF path, csv file path')
+    if len(sys.argv) < 6:
+        print('ERROR: Arguments are PPI path, date (YYYYMMDD), baseline netCDF path, csv file path, choose use of UZ or Z')
         sys.exit(0)
     print(sys.argv)
     #print(sys.argv[2])
@@ -19,7 +19,8 @@ if __name__ == '__main__':
     date = sys.argv[2]
     baselinedir = sys.argv[3]
     csvdir = sys.argv[4]
-    print(datadir, date, baselinedir, csvdir)
+    defaultZ = sys.argv[5]
+    print(datadir, date, baselinedir, csvdir, defaultZ)
 
     # Specify path for that day (datadir)
     # datadir should be input upon running script (sys.argv[1])
@@ -39,22 +40,35 @@ if __name__ == '__main__':
     #csv_output_path = '/home/hunzinger/data/'
     csv_filepath = csvdir+'rca_daily_values.csv'
 
-    # Read in baseline variables
-    dataset = Dataset(baselinedir+'rca_baseline_20181109.nc')
-    PCT_on_50 = dataset.variables['Flagged clutter grid gates'][:,:]
-    vPCT_on_50 = dataset.variables['Flagged clutter grid gates (V)'][:,:]
-    dbz95_baseline = dataset.variables['Baseline 95th reflectivity'][:]
-    vdbz95_baseline = dataset.variables['Baseline 95th reflectivity (V)'][:]
-    dataset.close()
+    # Specify the use of UZ or Z in the RCA calculation
+    # defaultZ should be input upon running script (sys.argv[5])
+    if defaultZ == 'UZ':
+        uncorrectedZ=True
+        dataset = Dataset(baselinedir+'rca_baseline_20181108.nc')
+        hPCT_on_50 = dataset.variables['Flagged clutter grid gates (UZh)'][:,:]
+        vPCT_on_50 = dataset.variables['Flagged clutter grid gates (UZv)'][:,:]    
+        hdbz95_baseline = dataset.variables['Baseline 95th reflectivity (UZh)'][:]
+        vdbz95_baseline = dataset.variables['Baseline 95th reflectivity (UZv)'][:]
+        dataset.close()
+    elif defaultZ == 'Z':
+        uncorrectedZ=False
+        dataset = Dataset(baselinedir+'rca_baseline_20181108.nc')
+        hPCT_on_50 = dataset.variables['Flagged clutter grid gates'][:,:]
+        vPCT_on_50 = dataset.variables['Flagged clutter grid gates (V)'][:,:]
+        hdbz95_baseline = dataset.variables['Baseline 95th reflectivity'][:]
+        vdbz95_baseline = dataset.variables['Baseline 95th reflectivity (V)'][:]
+        dataset.close()
+    else:
+        print('ERROR: Must specify the use of UZ or Z in the RCA calculation')
 
     # Create empty lists to fill using function
     dt = []
     dbz95 = []
     vdbz95 = []
 
-    for f in glob.glob(os.path.join(datadir, 'corcsaprM1*.'+date+'.23*cor-ppi*.h5')):
+    for f in glob.glob(os.path.join(datadir, 'corcsaprM1.*.cor-ppi*_'+date+'*.h5')):
         print(f)
-        DateTime, DBZ95, VDBZ95 = rca_calculate_hdf5_func(f, PCT_on_50, vPCT_on_50)
+        DateTime, DBZ95, VDBZ95 = rca_calculate_hdf5_func(f, hPCT_on_50, vPCT_on_50, uncorrectedZ=uncorrectedZ)
         
         # Put all PPI times into a list
         dt.append(DateTime)
@@ -64,7 +78,7 @@ if __name__ == '__main__':
     # Calculate mean dBZ95 using all PPI times to get daily mean (H)
     # and calculate RCA using baseline dBZ95
     dbz95_mean = np.nanmean(dbz95)
-    rca_mean = dbz95_baseline[0] - dbz95_mean
+    rca_mean = hdbz95_baseline[0] - dbz95_mean
 
     # Calculate mean dBZ95 using all PPI times to get daily mean (V)
     # and calculate RCA using baseline dBZ95
