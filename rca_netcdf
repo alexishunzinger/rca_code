@@ -1,0 +1,16 @@
+from netCDF4 import Dataset
+import numpy as np
+
+baselinedir = '/home/hunzinger/data/'
+dataset = Dataset(baselinedir+'rca_baseline_20181108.nc')
+
+hPCT_on_50 = dataset.variables['Flagged clutter grid gates (UZh)'][:,:]
+vPCT_on_50 = dataset.variables['Flagged clutter grid gates (UZv)'][:,:]    
+hdbz95_baseline = dataset.variables['Baseline 95th reflectivity (UZh)'][:]
+vdbz95_baseline = dataset.variables['Baseline 95th reflectivity (UZv)'][:]
+uhPCT_on_50 = dataset.variables['Flagged clutter grid gates'][:,:]
+uvPCT_on_50 = dataset.variables['Flagged clutter grid gates (V)'][:,:]
+uhdbz95_baseline = dataset.variables['Baseline 95th reflectivity'][:]
+uvdbz95_baseline = dataset.variables['Baseline 95th reflectivity (V)'][:]
+
+dataset.close()
