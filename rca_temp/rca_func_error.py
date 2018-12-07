@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pyart
 
 
-def rca_calculate_hdf5_func(filename, hPCT_on_50, vPCT_on_50, uncorrectedZ=True):
+def rca_func_error(filename, hPCT_on_50, vPCT_on_50, uncorrectedZ=True):
     """Calculates the 95th percentile clutter area reflectivity and RCA using baseline and clutter map for one particular day (all available PPI times)"""
 
     radar = pyart.aux_io.read_gamic(filename, file_field_names=True)
@@ -42,27 +42,16 @@ def rca_calculate_hdf5_func(filename, hPCT_on_50, vPCT_on_50, uncorrectedZ=True)
         zv = zv[sorted_idx]
         theta = theta[sorted_idx]
 
-        # Create array to store qualifying reflectivities (fall within PCT_on > 0.5)
-        #zh_car = np.empty((zh.shape))
-        #zh_car[:, :] = np.nan
-        #zv_car = np.empty((zv.shape))
-        #zv_car[:, :] = np.nan
+        # Create a false error in reflectivity (add 1 dBZ to Zh, Zv)
+        zh = zh + 1.
+        zv = zv + 1.
 
         # H POLARIZATION
         # Find and store all reflectivity values that fall within the PCT_on > 0.5 grid gate
-        #zh_car1 = zh[mhPCT_on_50]
         zh_car = zh[np.isfinite(hPCT_on_50)]
-        #for i in range(0, len(hPCT_on_50[:, 0])):
-        #    for j in range(0, len(hPCT_on_50[0, :])):
-        #        if np.isfinite(hPCT_on_50[i, j]):
-        #            zh_car[i, j * 10 - 10:j * 10] = zh[i, j * 10 - 10:j * 10]
 
         # Calculate the PDF of the clutter area reflectivity (CAR)
-        #mask = np.where(np.isfinite(zh_car))
-        # n,bins,patches=plt.hist(zh_car[mask],bins=525,range=(-40.,65.))
-        #n, bins = np.histogram(zh_car[mask], bins=525, range=(-40., 65.))
         n, bins = np.histogram(zh_car, bins=525, range=(-40., 65.))
-
 
         # Calculate CDF of clutter area reflectivity
         cdf = np.cumsum(n)
@@ -71,26 +60,17 @@ def rca_calculate_hdf5_func(filename, hPCT_on_50, vPCT_on_50, uncorrectedZ=True)
         # Find coefficients of 13th degree polynomial for CDF
         x = np.arange(525) * (1 / 5) - 40
         coeff = np.polyfit(p, x, 13)
+        #coeff = np.polynomial.polynomial.polyfit(p, x, 13)
         poly_func = np.poly1d(coeff)
-        # x_poly = np.linspace(p[0],p[-1],105)
-        # y_poly = poly_func(x_poly)
 
         # Find the value of reflectivity at the 95th percentile of CDF
         dbz95 = poly_func(95.)
 
         # V POLARIZATION
         # Find and store all reflectivity values that fall within the PCT_on > 0.5 grid gate
-        #zv_car = zv[vPCT_on_50]
         zv_car = zv[np.isfinite(vPCT_on_50)]
-        #for i in range(0, len(vPCT_on_50[:, 0])):
-        #    for j in range(0, len(vPCT_on_50[0, :])):
-        #        if np.isfinite(vPCT_on_50[i, j]):
-        #            zv_car[i, j * 10 - 10:j * 10] = zv[i, j * 10 - 10:j * 10]
 
         # Calculate the PDF of the clutter area reflectivity (CAR)
-        #mask = np.where(np.isfinite(zv_car))
-        # vn,vbins,vpatches=plt.hist(zv_car[mask],bins=525,range=(-40.,65.))
-        #vn, vbins = np.histogram(zv_car[mask], bins=525, range=(-40., 65.))
         vn, vbins = np.histogram(zv_car, bins=525, range=(-40., 65.))
 
         # Calculate CDF of clutter area reflectivity
@@ -98,11 +78,10 @@ def rca_calculate_hdf5_func(filename, hPCT_on_50, vPCT_on_50, uncorrectedZ=True)
         vp = cdf / cdf[-1] * 100
 
         # Find coefficients of 13th degree polynomial for CDF
-        x = np.arange(525) * (1 / 5) - 40
+        #x = np.arange(525) * (1 / 5) - 40
         coeff = np.polyfit(vp, x, 13)
+        #coeff = np.polynomial.polynomial.polyfit(vp, x, 13)
         poly_func = np.poly1d(coeff)
-        # x_poly = np.linspace(p[0],p[-1],105)
-        # y_poly = poly_func(x_poly)
 
         # Find the value of reflectivity at the 95th percentile of CDF
         dbz95_v = poly_func(95.)
@@ -131,25 +110,11 @@ def rca_calculate_hdf5_func(filename, hPCT_on_50, vPCT_on_50, uncorrectedZ=True)
         zv = zv[sorted_idx]
         theta = theta[sorted_idx]
 
-        # Create array to store qualifying reflectivities (fall within PCT_on > 0.5)
-        #zh_car = np.empty((zh.shape))
-        #zh_car[:, :] = np.nan
-        #zv_car = np.empty((zv.shape))
-        #zv_car[:, :] = np.nan
-
         # H POLARIZATION
         # Find and store all reflectivity values that fall within the PCT_on > 0.5 grid gate
-        #zh_car = zh[hPCT_on_50]
         zh_car = zh[np.isfinite(hPCT_on_50)]
-        #for i in range(0, len(hPCT_on_50[:, 0])):
-        #    for j in range(0, len(hPCT_on_50[0, :])):
-        #        if np.isfinite(hPCT_on_50[i, j]):
-        #            zh_car[i, j * 10 - 10:j * 10] = zh[i, j * 10 - 10:j * 10]
 
         # Calculate the PDF of the clutter area reflectivity (CAR)
-        #mask = np.where(np.isfinite(zh_car))
-        # n,bins,patches=plt.hist(zh_car[mask],bins=525,range=(-40.,65.))
-        #n, bins = np.histogram(zh_car[mask], bins=525, range=(-40., 65.))
         n, bins = np.histogram(zh_car, bins=525, range=(-40., 65.))
 
         # Calculate CDF of clutter area reflectivity
@@ -158,27 +123,18 @@ def rca_calculate_hdf5_func(filename, hPCT_on_50, vPCT_on_50, uncorrectedZ=True)
 
         # Find coefficients of 13th degree polynomial for CDF
         x = np.arange(525) * (1 / 5) - 40
+        #coeff = np.polynomial.polynomial.polyfit(p, x, 13)
         coeff = np.polyfit(p, x, 13)
         poly_func = np.poly1d(coeff)
-        # x_poly = np.linspace(p[0],p[-1],105)
-        # y_poly = poly_func(x_poly)
 
         # Find the value of reflectivity at the 95th percentile of CDF
         dbz95 = poly_func(95.)
 
         # V POLARIZATION
         # Find and store all reflectivity values that fall within the PCT_on > 0.5 grid gate
-        #zv_car = zv[vPCT_on_50]
         zv_car = zv[np.isfinite(vPCT_on_50)]
-        #for i in range(0, len(vPCT_on_50[:, 0])):
-        #    for j in range(0, len(vPCT_on_50[0, :])):
-        #        if np.isfinite(vPCT_on_50[i, j]):
-        #            zv_car[i, j * 10 - 10:j * 10] = zv[i, j * 10 - 10:j * 10]
 
         # Calculate the PDF of the clutter area reflectivity (CAR)
-        #mask = np.where(np.isfinite(zv_car))
-        # vn,vbins,vpatches=plt.hist(zv_car[mask],bins=525,range=(-40.,65.))
-        #vn, vbins = np.histogram(zv_car[mask], bins=525, range=(-40., 65.))
         vn, vbins = np.histogram(zv_car, bins=525, range=(-40., 65.))
 
         # Calculate CDF of clutter area reflectivity
@@ -186,11 +142,10 @@ def rca_calculate_hdf5_func(filename, hPCT_on_50, vPCT_on_50, uncorrectedZ=True)
         vp = cdf / cdf[-1] * 100
 
         # Find coefficients of 13th degree polynomial for CDF
-        x = np.arange(525) * (1 / 5) - 40
+        #x = np.arange(525) * (1 / 5) - 40
+        #coeff = np.polynomial.polynomial.polyfit(vp, x, 13)
         coeff = np.polyfit(vp, x, 13)
         poly_func = np.poly1d(coeff)
-        # x_poly = np.linspace(p[0],p[-1],105)
-        # y_poly = poly_func(x_poly)
 
         # Find the value of reflectivity at the 95th percentile of CDF
         dbz95_v = poly_func(95.)
